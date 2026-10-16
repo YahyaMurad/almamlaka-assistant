@@ -9,7 +9,7 @@ from app.core.config import get_settings
 app = FastAPI(title="Almamlaka Assistant API")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[get_settings().frontend_origin],
     allow_methods=["*"],
     allow_headers=["*"],
 )

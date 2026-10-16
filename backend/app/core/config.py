@@ -8,6 +8,7 @@ class Settings(BaseSettings):
 
     openai_api_key: str
     database_url: str = "postgresql+psycopg://mamlaka:mamlaka@localhost:5433/mamlaka"
+    frontend_origin: str = "http://localhost:3000"
     openai_model: str = "gpt-4o-mini"
     openai_embedding_model: str = "text-embedding-3-small"
 
