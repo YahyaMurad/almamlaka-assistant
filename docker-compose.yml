@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: mamlaka-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: mamlaka
+      POSTGRES_PASSWORD: mamlaka
+      POSTGRES_DB: mamlaka
+    ports:
+      - "5433:5432"
+    volumes:
+      - mamlaka_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  mamlaka_postgres_data:

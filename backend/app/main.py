@@ -1,0 +1,20 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.api.routes.conversations import router as conversations_router
+from app.core.config import get_settings
+
+app = FastAPI(title="Almamlaka Assistant API")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+app.include_router(conversations_router)
+
+
+@app.get("/health")
+def health():
+    settings = get_settings()
+    return {"status": "ok", "openai_key_loaded": bool(settings.openai_api_key)}
