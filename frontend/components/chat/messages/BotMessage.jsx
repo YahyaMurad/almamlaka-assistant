@@ -19,7 +19,10 @@ export default function BotMessage({ text, sources }) {
     <div className="flex items-start gap-3">
       <BrandMark />
       <div className="flex min-w-0 flex-1 flex-col gap-3 pt-1">
-        <div dir="auto" className="prose prose-base max-w-none break-words leading-8">
+        <div
+          dir="auto"
+          className="prose prose-base max-w-none break-words leading-8"
+        >
           <ReactMarkdown
             remarkPlugins={[remarkGfm, remarkMath]}
             rehypePlugins={[rehypeKatex]}

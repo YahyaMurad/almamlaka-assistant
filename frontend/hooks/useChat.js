@@ -1,9 +1,30 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
-import { createConversation as createRemoteConversation, sendMessage } from "@/lib/chatApi";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  createConversation as createRemoteConversation,
+  getConversation,
+  listConversations,
+  sendMessage,
+} from "@/lib/chatApi";
+import { getClientId } from "@/lib/clientId";
 
 const GROUP_ORDER = ["اليوم", "أمس", "الأسبوع الماضي"];
+
+function groupForDate(isoDate) {
+  const startOfDay = (d) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const diffDays = Math.round(
+    (startOfDay(new Date()) - startOfDay(new Date(isoDate))) / 86400000,
+  );
+  if (diffDays <= 0) return "اليوم";
+  if (diffDays === 1) return "أمس";
+  return "الأسبوع الماضي";
+}
+
+function toLocalMessage(m) {
+  return { role: m.role, text: m.content, sources: m.sources ?? [] };
+}
 
 function createDraftConversation(title = "محادثة جديدة") {
   return {
@@ -23,16 +44,55 @@ export function useChat() {
   const [convs, setConvs] = useState([]);
   const [activeId, setActiveId] = useState(null);
 
+  useEffect(() => {
+    const clientId = getClientId();
+    if (!clientId) return;
+    listConversations(clientId)
+      .then((list) => {
+        setConvs(
+          list.map((c) => ({
+            id: c.id,
+            backendId: c.id,
+            group: groupForDate(c.created_at),
+            title: c.title ?? "محادثة بدون عنوان",
+            messages: null, // lazy-loaded on selection
+          })),
+        );
+      })
+      .catch(() => {});
+  }, []);
+
   const activeConversation = convs.find((c) => c.id === activeId) ?? null;
 
   const newChat = useCallback(() => {
-    if (activeConversation && activeConversation.messages.length === 0) return;
+    if (activeConversation && (activeConversation.messages ?? []).length === 0)
+      return;
     const conversation = createDraftConversation();
     setConvs((prev) => [conversation, ...prev]);
     setActiveId(conversation.id);
     setDraft("");
     setQuery("");
   }, [activeConversation]);
+
+  const selectConversation = useCallback(
+    async (id) => {
+      setActiveId(id);
+      const conv = convs.find((c) => c.id === id);
+      if (!conv || conv.messages !== null) return;
+      try {
+        const detail = await getConversation(id);
+        const messages = detail.messages.map(toLocalMessage);
+        setConvs((prev) =>
+          prev.map((c) => (c.id === id ? { ...c, messages } : c)),
+        );
+      } catch {
+        setConvs((prev) =>
+          prev.map((c) => (c.id === id ? { ...c, messages: [] } : c)),
+        );
+      }
+    },
+    [convs],
+  );
 
   const ask = useCallback(
     async (text) => {
@@ -47,15 +107,22 @@ export function useChat() {
       }
 
       setConvs((prev) => {
-        let next = prev.find((c) => c.id === id) ? prev : [conversation, ...prev];
+        let next = prev.find((c) => c.id === id)
+          ? prev
+          : [conversation, ...prev];
         next = next.map((c) =>
           c.id === id
             ? {
                 ...c,
-                title: c.messages.length ? c.title : trimmed.slice(0, 40),
-                messages: [...c.messages, { role: "user", text: trimmed }],
+                title: (c.messages ?? []).length
+                  ? c.title
+                  : trimmed.slice(0, 40),
+                messages: [
+                  ...(c.messages ?? []),
+                  { role: "user", text: trimmed },
+                ],
               }
-            : c
+            : c,
         );
         const index = next.findIndex((c) => c.id === id);
         const [moved] = next.splice(index, 1);
@@ -67,34 +134,59 @@ export function useChat() {
 
       let backendId = conversation.backendId;
       if (!backendId) {
-        const created = await createRemoteConversation(trimmed.slice(0, 40));
+        const created = await createRemoteConversation(
+          trimmed.slice(0, 40),
+          getClientId(),
+        );
         backendId = created.id;
-        setConvs((prev) => prev.map((c) => (c.id === id ? { ...c, backendId } : c)));
+        setConvs((prev) =>
+          prev.map((c) => (c.id === id ? { ...c, backendId } : c)),
+        );
       }
 
-      await sendMessage(backendId, trimmed, (delta) => {
-        setTyping(false);
+      const updateLastAssistantMessage = (patch) => {
         setConvs((prev) =>
           prev.map((c) => {
             if (c.id !== id) return c;
-            const last = c.messages[c.messages.length - 1];
+            const messages = c.messages ?? [];
+            const last = messages[messages.length - 1];
             if (last?.role === "assistant") {
-              const messages = [...c.messages];
-              messages[messages.length - 1] = { ...last, text: last.text + delta };
-              return { ...c, messages };
+              const next = [...messages];
+              next[next.length - 1] = { ...last, ...patch(last) };
+              return { ...c, messages: next };
             }
-            return { ...c, messages: [...c.messages, { role: "assistant", text: delta, sources: [] }] };
-          })
+            return {
+              ...c,
+              messages: [
+                ...messages,
+                { role: "assistant", text: "", sources: [], ...patch(null) },
+              ],
+            };
+          }),
         );
-      });
+      };
+
+      await sendMessage(
+        backendId,
+        trimmed,
+        (delta) => {
+          setTyping(false);
+          updateLastAssistantMessage((last) => ({
+            text: (last?.text ?? "") + delta,
+          }));
+        },
+        (sources) => updateLastAssistantMessage(() => ({ sources })),
+      );
       setTyping(false);
     },
-    [activeId, convs, typing]
+    [activeId, convs, typing],
   );
 
   const groups = useMemo(() => {
     const trimmedQuery = query.trim();
-    const filtered = convs.filter((c) => !trimmedQuery || c.title.includes(trimmedQuery));
+    const filtered = convs.filter(
+      (c) => !trimmedQuery || c.title.includes(trimmedQuery),
+    );
     return GROUP_ORDER.map((label) => ({
       label,
       items: filtered
@@ -121,6 +213,6 @@ export function useChat() {
     isEmpty,
     newChat,
     ask,
-    selectConversation: setActiveId,
+    selectConversation,
   };
 }

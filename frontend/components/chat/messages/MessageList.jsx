@@ -9,8 +9,12 @@ export default function MessageList({ messages, typing }) {
         message.role === "user" ? (
           <UserMessage key={index} text={message.text} />
         ) : (
-          <BotMessage key={index} text={message.text} sources={message.sources} />
-        )
+          <BotMessage
+            key={index}
+            text={message.text}
+            sources={message.sources}
+          />
+        ),
       )}
       {typing && <TypingIndicator />}
     </div>

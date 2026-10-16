@@ -24,7 +24,12 @@ const THEME_INIT_SCRIPT = `
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="ar" dir="rtl" className={`${ibmPlexSansArabic.variable} h-full antialiased`} suppressHydrationWarning>
+    <html
+      lang="ar"
+      dir="rtl"
+      className={`${ibmPlexSansArabic.variable} h-full antialiased`}
+      suppressHydrationWarning
+    >
       <body className="h-full">
         <Script id="theme-init" strategy="beforeInteractive">
           {THEME_INIT_SCRIPT}

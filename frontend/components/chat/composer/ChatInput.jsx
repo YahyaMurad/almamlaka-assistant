@@ -29,7 +29,16 @@ export default function ChatInput({ value, onChange, onSend }) {
         aria-label="إرسال"
         className="flex h-11 w-11 flex-none items-center justify-center rounded-lg bg-brand text-white hover:bg-brand-hover"
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <path d="M19 12H5M11 6l-6 6 6 6" />
         </svg>
       </button>

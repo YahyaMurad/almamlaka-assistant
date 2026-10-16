@@ -5,7 +5,14 @@ import EmptyState from "./empty-state/EmptyState";
 import MessageList from "./messages/MessageList";
 import Composer from "./composer/Composer";
 
-export default function ChatPanel({ isEmpty, messages, typing, draft, onDraftChange, onSend }) {
+export default function ChatPanel({
+  isEmpty,
+  messages,
+  typing,
+  draft,
+  onDraftChange,
+  onSend,
+}) {
   const scrollRef = useRef(null);
 
   useEffect(() => {
@@ -25,7 +32,11 @@ export default function ChatPanel({ isEmpty, messages, typing, draft, onDraftCha
         </div>
       </div>
 
-      <Composer draft={draft} onDraftChange={onDraftChange} onSend={() => onSend(draft)} />
+      <Composer
+        draft={draft}
+        onDraftChange={onDraftChange}
+        onSend={() => onSend(draft)}
+      />
     </main>
   );
 }

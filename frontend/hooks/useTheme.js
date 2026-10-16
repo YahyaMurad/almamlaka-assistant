@@ -8,7 +8,9 @@ export function useTheme() {
   const [theme, setTheme] = useState("light");
 
   useEffect(() => {
-    const stored = document.documentElement.classList.contains("dark") ? "dark" : "light";
+    const stored = document.documentElement.classList.contains("dark")
+      ? "dark"
+      : "light";
     setTheme(stored);
   }, []);
 

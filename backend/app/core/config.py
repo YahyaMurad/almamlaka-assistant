@@ -9,6 +9,11 @@ class Settings(BaseSettings):
     openai_api_key: str
     database_url: str = "postgresql+psycopg://mamlaka:mamlaka@localhost:5433/mamlaka"
     openai_model: str = "gpt-4o-mini"
+    openai_embedding_model: str = "text-embedding-3-small"
+
+    chat_input_price_per_1m: float = 0.15
+    chat_output_price_per_1m: float = 0.60
+    embedding_price_per_1m: float = 0.02
 
 
 @lru_cache
